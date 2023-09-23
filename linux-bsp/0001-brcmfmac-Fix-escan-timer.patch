@@ -1,0 +1,30 @@
+From: Hante Meuleman <meuleman@broadcom.com>
+
+In some rare circumstances the escan protection timer can expire
+before the setup completed (due to long timeouts on IOCTL). This
+patch avoids this situation by setting the timer after the setup
+completed correctly.
+https://patchwork.kernel.org/project/linux-wireless/patch/1423244207-9707-7-git-send-email-arend@broadcom.com/
+
+---
+--- a/drivers/net/wireless/bcmdhd/wl_cfg80211.c
++++ b/drivers/net/wireless/bcmdhd/wl_cfg80211.c
+@@ -3155,8 +3155,6 @@
+ #endif /* WL_CFG80211_VSDB_PRIORITIZE_SCAN_REQUEST */
+ 
+ 
+-	/* Arm scan timeout timer */
+-	mod_timer(&cfg->scan_timeout, jiffies + msecs_to_jiffies(scan_timer_interval_ms));
+ 	if (request) {		/* scan bss */
+ 		ssids = request->ssids;
+ 		p2p_ssid = false;
+@@ -3289,6 +3287,9 @@
+ 	cfg->scan_request = request;
+ 	wl_set_drv_status(cfg, SCANNING, ndev);
+ 
++	/* Arm scan timeout timer */
++	mod_timer(&cfg->scan_timeout, jiffies + msecs_to_jiffies(scan_timer_interval_ms));
++
+ 	return 0;
+ 
+ scan_out:

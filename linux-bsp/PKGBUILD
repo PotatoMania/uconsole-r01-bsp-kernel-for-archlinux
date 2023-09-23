@@ -1,0 +1,264 @@
+# riscv64 uconsole r01
+# Maintainer: PotatoMania <nikko@faint.day>
+
+# change this if you want to change the kernel's name
+# and the packages' names
+pkgbase=linux-uconsole-r01-bsp
+pkgver=5.4.61
+pkgrel=1
+pkgdesc='linux-uconsole-r01-bsp'
+
+_srcball=https://github.com/PotatoMania/uconsole-r01-bsp-linux/archive/refs/tags/smartx-d1-h-tina-v2.1.tar.gz
+# toolchain tarball
+_tcball=https://github.com/PotatoMania/uconsole-r01-bsp-toolchain/archive/refs/tags/riscv64-glibc-gcc-thead_20200702.tar.gz
+_srcdir=linux-build
+_tcdir=tc-prebuilt
+
+arch=(riscv64)
+# inject code to makepkg's lib, force current architecture to be riscv64
+export CARCH=riscv64
+
+# url="http://www.kernel.org/"
+license=(GPL2)
+makedepends=(
+  bc
+  cpio
+  gettext
+  git
+  libelf
+  pahole
+  perl
+  python
+  tar
+  xz
+)
+options=('!strip')
+source=(
+  "linux_src.tar.gz::$_srcball"  # bsp kernel package
+  "toolchain.tar.gz::$_tcball"  # toolchain
+  "riscv64-prebuilt-scripts.tar.zst"  # prebuilt kernel scripts for native hosts
+  config  # the main kernel config file
+  0000-r01_v1.01_230614.patch  # patch from clockworkpi
+  0001-brcmfmac-Fix-escan-timer.patch
+  0003-Add-support-for-ZSTD-compressed-kernel.patch
+)
+noextract=(
+  "linux_src.tar.gz"
+  "toolchain.tar.gz"
+)
+b2sums=('dee1f43eafe7ecf4eb2b9b482ff40f3f3345341eff9eff15d0bb5d2502081e8efb850c3737cfd5e64d8aedbf15d5ce448eaa0b387e7c87b705a509eb8a551c28'
+        '4542401bb635ad5d825ed08ff50b3dd213c6a1592ee4d8ea5ebbd32de1f79ab9dedbc8757cdc1e6387b4451cf2d61f016c9897d26a1bd0a074756c549da7f063'
+        'ac5ad6f8673afc64011d502b5cf22b61e6491e2e78d487d509fd7405317526c5c62823bf26049a9885a50c1039633eb9a8e9a2d6dfcae20b6851555fd86163da'
+        '3d5db04ad893c06e29879a4b68a8c228df499928ed7b464c4802b6dffc9c10b5c10fa5163456933ece30a30513b1283231f70294ba829edcdc6ee90853ea8ad1'
+        '02ec9c7d7212e3ae73bd16bffd97f1b9b1ce55466a484e758aeb56fbbf200a890f0eb10ca71a7242ec9c24e73ca19e44098d3128982de6871c830b68f74f162b'
+        'c1431829be749266cfa9c6728a14c3addbbf18d785d932e6b1e378ba9a0a8cdbe128cb0f893909ab2242416da68f13800e765b3a76dea68d8dc0fff57abec793'
+        'fba6d1dca867693e4e20576a5aa0fc181ccd0a0e688489d33d0a91a7ade3d2996cf6d5f2d1ede8aed2c48fb7e9884e0c80404feaea7e48c51748dcd8c9fb5411')
+
+export KBUILD_BUILD_HOST=archlinux
+export KBUILD_BUILD_USER=$pkgbase
+export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
+
+_prefix_path () {
+    case ":$PATH:" in
+        *:"$1":*)
+            ;;
+        *)
+            PATH="$1${PATH:+:$PATH}"
+    esac
+}
+
+_make1() {
+  _prefix_path $(readlink -f $srcdir/$_tcdir/bin)
+  make -j$(nproc) CROSS_COMPILE=riscv64-unknown-linux-gnu- ARCH=riscv "$@"
+}
+
+_make() {
+  _prefix_path $(readlink -f $srcdir/$_tcdir/bin)
+  test -s version
+  make -j$(nproc) CROSS_COMPILE=riscv64-unknown-linux-gnu- ARCH=riscv KERNELRELEASE="$(<version)" "$@"
+}
+
+_strip() {
+  _prefix_path $(readlink -f $srcdir/$_tcdir/bin)
+  riscv64-unknown-linux-gnu-strip "$@"
+}
+
+prepare() {
+  echo "Extracting toolchain..."
+  mkdir $_tcdir
+  bsdtar -x --strip-components 1 -f toolchain.tar.gz -C $_tcdir
+
+  echo "Extracting linux source code..."
+  mkdir $_srcdir
+  bsdtar -x --strip-components 1 -f linux_src.tar.gz -C $_srcdir
+  cd $_srcdir
+
+  echo "Setting version..."
+  scripts/setlocalversion --save-scmversion
+  echo "-$pkgrel" > localversion.10-pkgrel
+  echo "${pkgbase#linux}" > localversion.20-pkgname
+
+  local src
+  for src in "${source[@]}"; do
+    src="${src%%::*}"
+    src="${src##*/}"
+    [[ $src = *.patch ]] || continue
+    echo "Applying patch $src..."
+    patch -Np1 < "../$src"
+  done
+
+  # This is required according to https://github.com/clockworkpi/uConsole/blob/master/Code/patch/r01/20230614/README.md
+  # Though I don't think it's necessary
+  cp arch/riscv/boot/dts/sunxi/uc_board.dts arch/riscv/boot/dts/sunxi/board.dts
+
+  echo "Pinning kernel version"
+  _make1 sun20iw1p1_d1_r01_defconfig
+  _make1 -s kernelrelease > version
+
+  echo "Setting config..."
+  cp ../config .config
+  _make olddefconfig
+  diff -u ../config .config || :
+
+  echo "Prepared $pkgbase version $(<version)"
+}
+
+build() {
+  cd $_srcdir
+  # _make all
+  _make
+  # _make htmldocs
+}
+
+_package() {
+  pkgdesc="The $pkgdesc kernel and modules"
+  depends=(
+    coreutils
+    initramfs
+    kmod
+  )
+  optdepends=(
+    'wireless-regdb: to set the correct wireless channels of your country'
+    'linux-firmware: firmware images needed for some devices'
+  )
+  provides=(
+    # "WIREGUARD-MODULE"  # nope, bsp dont have it, otherwise I missed it
+  )
+  # conflicts=('linux')  # this is riscv, not alarm, don't have to conflict
+  arch=(riscv64)
+
+  cd $_srcdir
+  local modulesdir="$pkgdir/usr/lib/modules/$(<version)"
+
+  echo "Installing boot image..."
+  # systemd expects to find the kernel here to allow hibernation
+  # https://github.com/systemd/systemd/commit/edda44605f06a41fb86b7ab8128dcf99161d2344
+  # PS. D1 does not support sleep/hibernation
+  install -Dm644 "$(_make -s image_name)" "$modulesdir/vmlinuz"
+
+  echo "Installing dtbs..."
+  _make INSTALL_DTBS_PATH="${pkgdir}/boot/dtbs" dtbs_install
+
+  # Used by mkinitcpio to name the kernel
+  echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
+
+  echo "Installing modules..."
+  ZSTD_CLEVEL=19 _make INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
+    DEPMOD=/doesnt/exist modules_install  # Suppress depmod
+
+  # remove build and source links
+  rm "$modulesdir"/{source,build}
+}
+
+_package-headers() {
+  pkgdesc="Headers and scripts for building modules for the $pkgdesc kernel"
+  depends=(pahole)
+  arch=(riscv64)
+
+  cd $_srcdir
+  local builddir="$pkgdir/usr/lib/modules/$(<version)/build"
+
+  echo "Installing build files..."
+  install -Dt "$builddir" -m644 .config Makefile Module.symvers System.map \
+    localversion.* version vmlinux
+  install -Dt "$builddir/kernel" -m644 kernel/Makefile
+  install -Dt "$builddir/arch/riscv" -m644 arch/riscv/Makefile
+
+  # for cross compile build, don't use host scripts.
+  # cp -t "$builddir" -a scripts
+  bsdtar -xpf "$srcdir/riscv64-prebuilt-scripts.tar.zst" -C "$builddir"
+
+  echo "Installing headers..."
+  cp -t "$builddir" -a include
+  cp -t "$builddir/arch/riscv" -a arch/riscv/include
+  install -Dt "$builddir/arch/riscv/kernel" -m644 arch/riscv/kernel/asm-offsets.s
+
+  install -Dt "$builddir/drivers/md" -m644 drivers/md/*.h
+  install -Dt "$builddir/net/mac80211" -m644 net/mac80211/*.h
+
+  # https://bugs.archlinux.org/task/13146
+  install -Dt "$builddir/drivers/media/i2c" -m644 drivers/media/i2c/msp3400-driver.h
+
+  # https://bugs.archlinux.org/task/20402
+  install -Dt "$builddir/drivers/media/usb/dvb-usb" -m644 drivers/media/usb/dvb-usb/*.h
+  install -Dt "$builddir/drivers/media/dvb-frontends" -m644 drivers/media/dvb-frontends/*.h
+  install -Dt "$builddir/drivers/media/tuners" -m644 drivers/media/tuners/*.h
+
+  # https://bugs.archlinux.org/task/71392
+  install -Dt "$builddir/drivers/iio/common/hid-sensors" -m644 drivers/iio/common/hid-sensors/*.h
+
+  echo "Installing KConfig files..."
+  find . -name 'Kconfig*' -exec install -Dm644 {} "$builddir/{}" \;
+
+  echo "Removing unneeded architectures..."
+  local arch
+  for arch in "$builddir"/arch/*/; do
+    [[ $arch == */riscv/ ]] && continue
+    echo "Removing $(basename "$arch")"
+    rm -r "$arch"
+  done
+
+  echo "Removing documentation..."
+  rm -r "$builddir/Documentation"
+
+  echo "Removing broken symlinks..."
+  find -L "$builddir" -type l -printf 'Removing %P\n' -delete
+
+  echo "Removing loose objects..."
+  find "$builddir" -type f -name '*.o' -printf 'Removing %P\n' -delete
+
+  echo "Stripping build tools..."
+  local file
+  while read -rd '' file; do
+    case "$(file -Sib "$file")" in
+      application/x-sharedlib\;*)      # Libraries (.so)
+        _strip -v $STRIP_SHARED "$file" ;;
+      application/x-archive\;*)        # Libraries (.a)
+        _strip -v $STRIP_STATIC "$file" ;;
+      application/x-executable\;*)     # Binaries
+        _strip -v $STRIP_BINARIES "$file" ;;
+      application/x-pie-executable\;*) # Relocatable binaries
+        _strip -v $STRIP_SHARED "$file" ;;
+    esac
+  done < <(find "$builddir" -type f -perm -u+x ! -name vmlinux -print0)
+
+  echo "Stripping vmlinux..."
+  _strip -v $STRIP_STATIC "$builddir/vmlinux"
+
+  echo "Adding symlink..."
+  mkdir -p "$pkgdir/usr/src"
+  ln -sr "$builddir" "$pkgdir/usr/src/$pkgbase"
+}
+
+pkgname=(
+  "$pkgbase"
+  "$pkgbase-headers"
+)
+for _p in "${pkgname[@]}"; do
+  eval "package_$_p() {
+    $(declare -f "_package${_p#$pkgbase}")
+    _package${_p#$pkgbase}
+  }"
+done
+
+# vim:set ts=8 sts=2 sw=2 et:
