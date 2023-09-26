@@ -38,8 +38,12 @@ source=(
   "toolchain.tar.gz::$_tcball"  # toolchain
   "riscv64-prebuilt-scripts.tar.zst"  # prebuilt kernel scripts for native hosts
   config  # the main kernel config file
+  # i dont want to bother creating patch for these dtses
+  uc_board.dts
+  dt_board.dts
   0000-r01_v1.01_230614.patch  # patch from clockworkpi
   0001-brcmfmac-Fix-escan-timer.patch
+  0001-Bluetooth-hci_serdev-call-init_rwsem-before-p--open.patch
   0003-Add-support-for-ZSTD-compressed-kernel.patch
 )
 noextract=(
@@ -49,9 +53,12 @@ noextract=(
 b2sums=('dee1f43eafe7ecf4eb2b9b482ff40f3f3345341eff9eff15d0bb5d2502081e8efb850c3737cfd5e64d8aedbf15d5ce448eaa0b387e7c87b705a509eb8a551c28'
         '4542401bb635ad5d825ed08ff50b3dd213c6a1592ee4d8ea5ebbd32de1f79ab9dedbc8757cdc1e6387b4451cf2d61f016c9897d26a1bd0a074756c549da7f063'
         'ac5ad6f8673afc64011d502b5cf22b61e6491e2e78d487d509fd7405317526c5c62823bf26049a9885a50c1039633eb9a8e9a2d6dfcae20b6851555fd86163da'
-        '0eaa0dffd7886f3911c5201d1c945aa5dd1e3093aaffb2ae69451e08d204d92301e3c4dfc8e19d429b770e4d0c5da9a2c5e3929d76c8cb7aa90c066034cfdf2a'
+        '920bc142e81e9dde2501fe4a6ce2db79cef7384a72a40e9ad6e3ac38736f073dbda5bd6cd37a079adbff1eb98d35bdae5b8013f8fe410b300103a94071f7601b'
+        'bddfd6a801899c36d6db4b902413dee56906e43844b4e60ef5687fab9cda1225de05bfeead02f15d927ff80398d539af5b697ed64cddf2bd71f05627ff92a63d'
+        '2ab7695be0e13ef5b7bac1104b5e60ccf861ac0bf68ab471c9a7165c68fc0a71953d523f19cab2ae39eba82ba648d240dff8b288f7ab07908fd9717b928fbf6a'
         '02ec9c7d7212e3ae73bd16bffd97f1b9b1ce55466a484e758aeb56fbbf200a890f0eb10ca71a7242ec9c24e73ca19e44098d3128982de6871c830b68f74f162b'
         'c1431829be749266cfa9c6728a14c3addbbf18d785d932e6b1e378ba9a0a8cdbe128cb0f893909ab2242416da68f13800e765b3a76dea68d8dc0fff57abec793'
+        'e5bb9ba8ba371374e99050c41b11de7970c3f74787103e838380dc85ef003c28fefccd0ad1412c1b166ce4f922119766e3326760bab050eb2a131811e14c253b'
         'fba6d1dca867693e4e20576a5aa0fc181ccd0a0e688489d33d0a91a7ade3d2996cf6d5f2d1ede8aed2c48fb7e9884e0c80404feaea7e48c51748dcd8c9fb5411')
 
 export KBUILD_BUILD_HOST=archlinux
@@ -107,9 +114,9 @@ prepare() {
     patch -Np1 < "../$src"
   done
 
-  # This is required according to https://github.com/clockworkpi/uConsole/blob/master/Code/patch/r01/20230614/README.md
-  # Though I don't think it's necessary
-  cp arch/riscv/boot/dts/sunxi/uc_board.dts arch/riscv/boot/dts/sunxi/board.dts
+  # updated device tree source files
+  cp $srcdir/uc_board.dts arch/riscv/boot/dts/sunxi/
+  cp $srcdir/dt_board.dts arch/riscv/boot/dts/sunxi/
 
   echo "Pinning kernel version"
   _make1 sun20iw1p1_d1_r01_defconfig
