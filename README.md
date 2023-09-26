@@ -52,6 +52,37 @@ The corresponding firmware(brcmfmac43456-sdio) can be installed with an AUR pack
 
 It's simple, but still WIP.
 
+### How to enable bluetooth
+
+Build your kernel with config & patches in this repo, and install the bluetooth firmware from [Armbian's repo](https://github.com/armbian/firmware/blob/master/brcm/BCM4345C5.hcd) to `/usr/lib/firmware/brcm`.
+
+<details>
+<summary>If you want to enable it in your own kernel:</summary>
+
+Add this node to uart0 in your dts:
+
+```
+bluetooth {
+		compatible = "brcm,bcm4345c5";
+		interrupt-parent = <&pio>;
+		interrupts = <PG 17 IRQ_TYPE_LEVEL_HIGH>; /* PG 17/GPIO6 */
+		interrupt-names = "host-wake";
+		device-wakeup-gpios = <&pio PG 16 GPIO_ACTIVE_HIGH>; /* PG 16/GPIO7 */
+		shutdown-gpios = <&pio PG 18 GPIO_ACTIVE_HIGH>; /* PG 18/GPIO5 */
+		max-speed = <4000000>;
+		vbat-supply = <&reg_dldo1>;
+		vddio-supply = <&reg_aldo3>;
+	};
+```
+
+Then remove node `bt: bt@0` and `btlpm: btlpm@0` because they occupy the pins for bluetooth driver.
+
+In your kernel config, enable `CONFIG_SERIAL_DEV_BUS`, `CONFIG_BT_HCIUART`, `CONFIG_BT_HCIUART_BCM` and other interesting options.
+
+Now it should work after you update the kernel.
+
+</details>
+
 ### Want a cursor on framebuffer
 
 R-01 doesn't have a hardware cursor(that's default), and you can use a cmdline parameter to change the default
