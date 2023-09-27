@@ -59,7 +59,7 @@ Build your kernel with config & patches in this repo, and install the bluetooth 
 <details>
 <summary>If you want to enable it in your own kernel:</summary>
 
-Add this node to uart0 in your dts:
+Add this node to ~~uart0~~ uart1 in your dts:
 
 ```
 bluetooth {
