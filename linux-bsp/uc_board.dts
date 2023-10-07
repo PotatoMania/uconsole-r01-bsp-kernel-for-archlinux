@@ -580,55 +580,57 @@
 		/*sdc_dis_host_caps = <0x180>;*/
 	};
 
-	rfkill: rfkill@0 {
-		compatible    = "allwinner,sunxi-rfkill";
-		chip_en;
-		power_en;
-		status        = "okay";
+	// rfkill: rfkill@0 {
+	// 	compatible    = "allwinner,sunxi-rfkill";
+	// 	chip_en;
+	// 	power_en;
+	// 	status        = "okay";
 
-		wlan: wlan@0 {
-			compatible    = "allwinner,sunxi-wlan";
-			wlan_busnum    = <0x1>;
-			/*wlan_power    = "VCC-3V3";*/
-			/*wlan_power_vol = <3300000>;*/
-			/*interrupt-parent = <&pio>;
-			interrupts = < PG 10 IRQ_TYPE_LEVEL_HIGH>;*/
-			wakeup-source;
+	// 	wlan: wlan@0 {
+	// 		compatible    = "allwinner,sunxi-wlan";
+	// 		wlan_busnum    = <0x1>;
+	// 		/*wlan_power    = "VCC-3V3";*/
+	// 		/*wlan_power_vol = <3300000>;*/
+	// 		/*interrupt-parent = <&pio>;
+	// 		interrupts = < PG 10 IRQ_TYPE_LEVEL_HIGH>;*/
+	// 		wakeup-source;
 
-		};
+	// 	};
 
-		bt: bt@0 {
-			compatible    = "allwinner,sunxi-bt";
-			/*bt_power_num = <0x01>;*/
-			/*bt_power      = "axp803-dldo1";*/
-			/*bt_io_regulator = "axp803-dldo1";*/
-			/*bt_io_vol = <3300000>;*/
-			/*bt_power_vol = <330000>;*/
-			// bt_rst_n      = <&pio PG 18 GPIO_ACTIVE_LOW>;
-			status        = "disabled";
-		};
-	};
+	// 	bt: bt@0 {
+	// 		compatible    = "allwinner,sunxi-bt";
+	// 		/*bt_power_num = <0x01>;*/
+	// 		/*bt_power      = "axp803-dldo1";*/
+	// 		/*bt_io_regulator = "axp803-dldo1";*/
+	// 		/*bt_io_vol = <3300000>;*/
+	// 		/*bt_power_vol = <330000>;*/
+	// 		// bt_rst_n      = <&pio PG 18 GPIO_ACTIVE_LOW>;
+	// 		status        = "disabled";
+	// 	};
+	// };
 
-	btlpm: btlpm@0 {
-		compatible  = "allwinner,sunxi-btlpm";
-		uart_index  = <0x1>;
-		// bt_wake     = <&pio PG 16 GPIO_ACTIVE_HIGH>;
-		// bt_hostwake = <&pio PG 17 GPIO_ACTIVE_HIGH>;
-		status      = "disabled";
-	};
+	// Looks like this is only preferable on android
+	// btlpm: btlpm@0 {
+	// 	compatible  = "allwinner,sunxi-btlpm";
+	// 	uart_index  = <0x1>;
+	// 	// bt_wake     = <&pio PG 16 GPIO_ACTIVE_HIGH>;
+	// 	// bt_hostwake = <&pio PG 17 GPIO_ACTIVE_HIGH>;
+	// 	status      = "disabled";
+	// };
 
-	addr_mgt: addr_mgt@0 {
-		compatible     = "allwinner,sunxi-addr_mgt";
-		type_addr_wifi = <0x0>;
-		type_addr_bt   = <0x0>;
-		type_addr_eth  = <0x0>;
-		status         = "okay";
-	};
+	// addr_mgt: addr_mgt@0 {
+	// 	compatible     = "allwinner,sunxi-addr_mgt";
+	// 	type_addr_wifi = <0x0>;
+	// 	type_addr_bt   = <0x0>;
+	// 	type_addr_eth  = <0x0>;
+	// 	status         = "okay";
+	// };
 	
 	battery: battery@0 {
-    		compatible = "simple-battery";
-    		constant-charge-current-max-microamp = <2100000>;
-    		voltage-min-design-microvolt = <3300000>;
+		compatible = "simple-battery";
+		constant-charge-current-max-microamp = <2100000>;
+		voltage-min-design-microvolt = <3300000>;
+		voltage-max-design-microvolt = <4200000>;
  	};
 
 	wifi_pwrseq: wifi-pwrseq {
@@ -665,8 +667,8 @@
 	bus-width = <4>;
 	cd-gpios = <&pio PF 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 	non-removable;
-	/*broken-cd;*/
-	cd-inverted;
+	broken-cd;
+	/*cd-inverted;*/
 	/*data3-detect;*/
 	/*card-pwr-gpios = <&pio PH 14 1 1 2 0xffffffff>;*/
 	cd-used-24M;
@@ -709,8 +711,11 @@
 	max-frequency = <150000000>;
 	ctl-spec-caps = <0x8>;
 	status = "okay";
-	brcm: sdio-wifi@1 {
+	non-removable;
+
+	ap6256: sdio-wifi@1 {
   		reg = <1>;
+		compatible = "brcm,bcm43456-fmac", "brcm,bcm4329-fmac";
   		interrupt-parent = <&pio>;
   		interrupts = <PG 10 IRQ_TYPE_LEVEL_LOW>;
   		interrupt-names = "host-wake";

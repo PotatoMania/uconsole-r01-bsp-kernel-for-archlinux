@@ -53,8 +53,8 @@ noextract=(
 b2sums=('dee1f43eafe7ecf4eb2b9b482ff40f3f3345341eff9eff15d0bb5d2502081e8efb850c3737cfd5e64d8aedbf15d5ce448eaa0b387e7c87b705a509eb8a551c28'
         '4542401bb635ad5d825ed08ff50b3dd213c6a1592ee4d8ea5ebbd32de1f79ab9dedbc8757cdc1e6387b4451cf2d61f016c9897d26a1bd0a074756c549da7f063'
         'ac5ad6f8673afc64011d502b5cf22b61e6491e2e78d487d509fd7405317526c5c62823bf26049a9885a50c1039633eb9a8e9a2d6dfcae20b6851555fd86163da'
-        '920bc142e81e9dde2501fe4a6ce2db79cef7384a72a40e9ad6e3ac38736f073dbda5bd6cd37a079adbff1eb98d35bdae5b8013f8fe410b300103a94071f7601b'
-        'bddfd6a801899c36d6db4b902413dee56906e43844b4e60ef5687fab9cda1225de05bfeead02f15d927ff80398d539af5b697ed64cddf2bd71f05627ff92a63d'
+        'bba79d68ed7cbd883198a430d7339fc582fa30c715a7d230df0bda57746b5dc6d73f36ce1f2fb6f6b97102221c06335fdf6ed79c75569fae8ee82f55a7ac5e67'
+        'b1e862700e7df0d103605717b5153a22b0ec4bd427f47376d893a7aa5f90fd591a385fb449a6118dc64d8de0aadad7de37737914fdf0772819f6395490f03d16'
         '2ab7695be0e13ef5b7bac1104b5e60ccf861ac0bf68ab471c9a7165c68fc0a71953d523f19cab2ae39eba82ba648d240dff8b288f7ab07908fd9717b928fbf6a'
         '02ec9c7d7212e3ae73bd16bffd97f1b9b1ce55466a484e758aeb56fbbf200a890f0eb10ca71a7242ec9c24e73ca19e44098d3128982de6871c830b68f74f162b'
         'c1431829be749266cfa9c6728a14c3addbbf18d785d932e6b1e378ba9a0a8cdbe128cb0f893909ab2242416da68f13800e765b3a76dea68d8dc0fff57abec793'
@@ -141,7 +141,7 @@ _package() {
   pkgdesc="The $pkgdesc kernel and modules"
   depends=(
     coreutils
-    initramfs
+    #initramfs
     kmod
   )
   optdepends=(
@@ -162,6 +162,9 @@ _package() {
   # https://github.com/systemd/systemd/commit/edda44605f06a41fb86b7ab8128dcf99161d2344
   # PS. D1 does not support sleep/hibernation
   install -Dm644 "$(_make -s image_name)" "$modulesdir/vmlinuz"
+
+  # initramfs not enabled, so place our own kernel image
+  install -Dm644 "$(_make -s image_name)" "${pkgdir}/boot/vmlinuz-${pkgbase}"
 
   echo "Installing dtbs..."
   _make INSTALL_DTBS_PATH="${pkgdir}/boot/dtbs" dtbs_install
