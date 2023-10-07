@@ -24,6 +24,10 @@ makepkg -Cf
 
 This is tested on a x86_64 ArchLinux host. (Yeah, it's a riscv64 package built on a x86_64 host XD.)
 
+The kernel source and toolchain are hosted in 2 separated repo(to avoid using LFS, which has limited bandwidth), [uconsole-r01-bsp-linux](https://github.com/PotatoMania/uconsole-r01-bsp-linux) and [uconsole-r01-bsp-toolchain](https://github.com/PotatoMania/uconsole-r01-bsp-toolchain), respectively.
+
+For users new to makepkg: it's basically a shell script to execute the tasks listed in PKGBUILD(also shell script) in a predefined way. So if you want to reuse the kernel config and patches without makepkg, just rewrite PKGBUILD in the way you favor.
+
 ## Notes on common problems
 
 ### Setup bootloader
@@ -140,6 +144,12 @@ B: bit for blue
 
 I haven't built a usable bootloader for the BSP kernel, so I simply copied one from the image
 released by clockwork devs. See `bootloader-backup`.
+
+### Shutdown is slooooooooow
+
+It looks like the spinlock is not enabled in original kernel config. I enabled it and the shutdown process become so smooooooth and fast.
+
+PS. When a program waits a spinlock, it will loop and do nothing. It's suitable for tasks only wait a very short time, so the overhead of task switching can be saved.
 
 ## About hacks
 
