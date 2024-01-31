@@ -1,0 +1,15 @@
+# Install ModemManager and put this rule to /etc/udev/rules.d
+# Note: this rule's execution number must bigger than 77, as corresponding
+# ModemManager's rule's is 77
+
+# USE THIS ONLY IF YOU WANT TO STICK WITH GPSD!
+
+SUBSYSTEM!="tty", GOTO="mm_gpsd_simtech_end"
+
+# SIMCOM 7600-H on uConsole
+ATTRS{idVendor}=="1e0e", ATTRS{idProduct}=="9001", ENV{ID_MM_PORT_TYPE_GPS}=="1", SYMLINK+="gps%n", TAG+="systemd", ENV{SYSTEMD_WANTS}="gpsdctl@%k.service"
+
+# remove from gpsd
+ACTION=="remove", TAG+="systemd", ENV{SYSTEMD_WANTS}="gpsdctl@%k.service"
+
+LABEL="mm_gpsd_simtech_end"
